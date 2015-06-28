@@ -1,0 +1,2 @@
+privatemessages,read,submit,modconfig,edit
+True
