@@ -11,7 +11,7 @@ from datetime import datetime
 
 ### CLASS ###
 class Define_It:
-	def __init__(self, reddit, footer='', sidebar='', username='', subreddit=''):
+	def __init__(self, reddit, footer='', sidebar='', username='', subreddit='', api_file='define_it.conf'):
 		self._r = reddit
 		self._o = OAuth2Util.OAuth2Util(self._r)
 		
@@ -20,8 +20,9 @@ class Define_It:
 		
 		self.message_footer = footer
 		self.sidebar = sidebar
-		self.match_pattern = re.compile(r'(?:\n|^)define(?:: ?| )(-ignore|(?:["*\']+)?([^\n,.!?#&_:;"*\\(){}<>[\]]+))(, ?((pro)?noun|(ad)?verb(-(in)?transitive)?|adjective|abbreviation|(preposi|conjunc|interjec)tion))?')
+		self.match_pattern = re.compile(r'(?:\n|^)define(?:: ?| )(-ignore|(?:["*\']+)?([^\n,.!?#&_:;"*\\(){}<>[\]]+))(, ?((pro)?noun|(ad)?verb(-(in)?transitive)?|adjective|(abbrevia|preposi|conjunc|interjec)tion))?')
 		
+		self._api_file = api_file
 		self._load_dictionary()
 		self._create_api()
 		
@@ -31,7 +32,7 @@ class Define_It:
 	# ### WORDNIK ### #
 	def _load_dictionary(self):
 		try:
-			with open('define_it.conf','r') as f:
+			with open(self._api_file, 'r') as f:
 				lines = [x.strip() for x in f.readlines()]
 			self._api_url,self._api_key = lines
 		except OSError:
@@ -95,7 +96,7 @@ class Define_It:
 		if id not in already_done:
 			self._done.add('%s\n'%id)
 			author = comment.author.name
-			body = re.sub(r'/u/%s'self.username,'define',comment.body,flags=re.IGNORECASE)
+			body = re.sub(r'/u/%s'%self.username,'define',comment.body,flags=re.IGNORECASE)
 			formatted = self._make(body)
 			if formatted != None and author not in avoid:
 				if isinstance(formatted, list):
@@ -124,7 +125,8 @@ class Define_It:
 					print('%s requested "%s"%s'%(author,word,partText))
 					comment.reply(formatted + self.message_footer)
 					try:
-						self._r.get_subreddit(self.subreddit).update_settings(description=self.sidebar.format(requester=author,definitions=formatted))
+						if self.sidebar != '':
+							self._r.get_subreddit(self.subreddit).update_settings(description=self.sidebar.format(requester=author,definitions=formatted))
 					except Exception as e:
 						Error(e, tb=traceback)
 	
